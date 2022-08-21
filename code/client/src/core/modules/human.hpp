@@ -81,18 +81,18 @@ namespace MafiaMP::Core::Modules {
                             SDK::C_Car* car = (SDK::C_Car*)tracking.human->GetOwner();
                             const auto carId = Core::Modules::Vehicle::GetCarEntity(car);
                             if(carId) {
-                                metadata.carPassenger = { STATE_INSIDE, false, carId, (int)human2CarWrapper->GetSeatID(tracking.human) };
+                                metadata.carPassenger = { STATE_ENTERING, false, carId, (int)human2CarWrapper->GetSeatID(tracking.human) };
                             }
                         }
                         else if(human2CarWrapper && charController->GetCarHandler()->GetCarState() == 8) /* leaving in progress */ {
-                            metadata.carPassenger = {};
+                            metadata.carPassenger = {STATE_LEAVING};
                         }
                     } break;
                     }
 
                     if (metadata._charStateHandlerType != SDK::ue::game::humanai::C_CharacterStateHandler::E_SHT_CAR) {
                         // not in a vehicle, so make sure data is reset
-                        metadata.carPassenger = {};
+                        metadata.carPassenger = {STATE_OUTSIDE};
                     }
                 }
             });
@@ -202,7 +202,10 @@ namespace MafiaMP::Core::Modules {
                 humanUpdate.SetSprinting(updateData->_isSprinting);
                 humanUpdate.SetSprintSpeed(updateData->_sprintSpeed);
                 humanUpdate.SetStalking(updateData->_isStalking);
-                humanUpdate.SetCarPassenger(updateData->carPassenger.carId, updateData->carPassenger.seatId);
+
+                if (updateData->carPassenger.enterState != STATE_OUTSIDE) {
+                    humanUpdate.SetCarPassenger(updateData->carPassenger.carId, updateData->carPassenger.seatId);
+                }
                 peer->Send(humanUpdate, guid);
                 return true;
             };
@@ -292,9 +295,10 @@ namespace MafiaMP::Core::Modules {
                 auto updateData = e.get_mut<Shared::Modules::HumanSync::UpdateData>();
 
                 const auto carPassenger = msg->GetCarPassenger();
-                if (carPassenger.carId) {
-                    updateData->carPassenger.carId = carPassenger.carId;
-                    updateData->carPassenger.seatId = carPassenger.seatId;
+                if (carPassenger.HasValue()) {
+                    const auto carPassengerValue = carPassenger.Value();
+                    updateData->carPassenger.carId = carPassengerValue.carId;
+                    updateData->carPassenger.seatId = carPassengerValue.seatId;
                     updateData->carPassenger.enterState = STATE_ENTERING;
                     updateData->carPassenger.enterForced = true;
                 }
@@ -335,8 +339,11 @@ namespace MafiaMP::Core::Modules {
                 updateData->_sprintSpeed          = msg->GetSprintSpeed();
 
                 const auto carPassenger = msg->GetCarPassenger();
-                updateData->carPassenger.carId = carPassenger.carId;
-                updateData->carPassenger.seatId = carPassenger.seatId;
+                if (carPassenger.HasValue()) {
+                    const auto carPassengerValue = carPassenger.Value();
+                    updateData->carPassenger.carId  = carPassengerValue.carId;
+                    updateData->carPassenger.seatId = carPassengerValue.seatId;
+                }
 
                 Update(e);
             });

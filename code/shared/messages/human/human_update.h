@@ -19,7 +19,9 @@ namespace MafiaMP::Shared::Messages::Human {
         struct CarPassenger {
             uint64_t carId{};
             int seatId{};
-        } _carPassenger{};
+        };
+
+        Framework::Utils::Optional<CarPassenger> _carPassenger {};
 
       public:
         uint8_t GetMessageID() const override {
@@ -33,7 +35,7 @@ namespace MafiaMP::Shared::Messages::Human {
             bs->Serialize(write, _isSprinting);
             bs->Serialize(write, _isStalking);
             bs->Serialize(write, _sprintSpeed);
-            bs->Serialize(write, _carPassenger);
+            SerializeOptional(bs, write, _carPassenger);
         }
 
         bool Valid() const override {
@@ -90,11 +92,10 @@ namespace MafiaMP::Shared::Messages::Human {
         }
 
         void SetCarPassenger(uint64_t carId, int seatId) {
-            _carPassenger.carId = carId;
-            _carPassenger.seatId = seatId;
+            _carPassenger = { carId, seatId };
         }
 
-        CarPassenger GetCarPassenger() const {
+        Framework::Utils::Optional<CarPassenger> GetCarPassenger() const {
             return _carPassenger;
         }
     };

@@ -95,7 +95,8 @@ namespace MafiaMP::Core::Modules {
                 const auto carPassenger = msg->GetCarPassenger();
 
                 // TODO improve this code
-                if (trackingMetadata->carPassenger.carId != carPassenger.carId) {
+                if (carPassenger.HasValue()) {
+                    const auto carPassengerValue = carPassenger.Value();
                     if (trackingMetadata->carPassenger.carId) {
                         const auto carEnt = srv->WrapEntity(trackingMetadata->carPassenger.carId);
 
@@ -104,20 +105,20 @@ namespace MafiaMP::Core::Modules {
                             car->seats[trackingMetadata->carPassenger.seatId] = 0;
                         }
                     }
-                    if (carPassenger.carId) {
-                        const auto carEnt = srv->WrapEntity(carPassenger.carId);
+                    if (carPassengerValue.carId) {
+                        const auto carEnt = srv->WrapEntity(carPassengerValue.carId);
 
                         if (carEnt.is_alive()) {
                             auto car = carEnt.get_mut<Shared::Modules::VehicleSync::UpdateData>();
-                            car->seats[carPassenger.seatId] = e.id();
+                            car->seats[carPassengerValue.seatId] = e.id();
 
                             // TODO rework so that we can ensure player doesn't sit in fully occupied vehicle etc
                         }
                     }
-                }
 
-                trackingMetadata->carPassenger.carId = carPassenger.carId;
-                trackingMetadata->carPassenger.seatId = carPassenger.seatId;
+                    trackingMetadata->carPassenger.carId  = carPassengerValue.carId;
+                    trackingMetadata->carPassenger.seatId = carPassengerValue.seatId;
+                }
             });
         }
     };
